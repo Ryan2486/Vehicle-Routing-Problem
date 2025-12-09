@@ -20,7 +20,7 @@ using namespace std;
 
 static mt19937 gen(random_device{}());
 constexpr int POPULATION_SIZE = 100;
-constexpr int BEST_SELECTION_SIZE = POPULATION_SIZE / 5;
+constexpr int BEST_SELECTION_SIZE = POPULATION_SIZE * 0.1;
 constexpr int MAX_ATTEMPTS = 50;
 
 struct Point{
