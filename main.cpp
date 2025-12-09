@@ -126,25 +126,29 @@ void apply2Opt(Route& route, const Point& depot) {
     const int n = route.clientCount();
     if (n < 4) return;
 
-    double best_distance = calculate_route_distance(route, depot);
     bool improved = true;
-
     while (improved) {
         improved = false;
         for (int i = 0; i < n - 1; i++) {
-            for (int j = i + 1; j < n; j++) {
-                reverse(route.clients.begin() + i, route.clients.begin() + j + 1);
-                double new_distance = calculate_route_distance(route, depot);
-                if (new_distance < best_distance) {
-                    best_distance = new_distance;
-                    improved = true;
-                } else {
+            for (int j = i + 2; j < n; j++) {
+                const Point& before_i = (i == 0) ? depot : route.clients[i - 1];
+                const Point& after_j = (j == n - 1) ? depot : route.clients[j + 1];
+
+                double old_edges = distance(before_i, route.clients[i]) +
+                                  distance(route.clients[j], after_j);
+
+                double new_edges = distance(before_i, route.clients[j]) +
+                                  distance(route.clients[i], after_j);
+
+                if (new_edges < old_edges) {
                     reverse(route.clients.begin() + i, route.clients.begin() + j + 1);
+                    improved = true;
                 }
             }
         }
     }
 }
+
 
 string format_output(const vector<Route>& routes) {
     string output;
