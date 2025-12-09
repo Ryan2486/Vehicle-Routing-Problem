@@ -203,20 +203,6 @@ vector<Chromosome> best_selection(const vector<Chromosome>& population, const in
     return sorted_population;
 }
 
-void swapClientsWithinRoute(Chromosome& chromosome, const int routesCount) {
-    uniform_int_distribution<> route_dis(0, routesCount - 1);
-    if (const int routeIdx = route_dis(gen); chromosome.routes[routeIdx].clientCount() >= 2) {
-        uniform_int_distribution<> clientA_dis(0, chromosome.routes[routeIdx].clientCount() - 1);
-        uniform_int_distribution<> clientB_dis(0, chromosome.routes[routeIdx].clientCount() - 1);
-        const int clientAIdx = clientA_dis(gen);
-        int clientBIdx = clientB_dis(gen);
-        while (clientBIdx == clientAIdx) {
-            clientBIdx = clientB_dis(gen);
-        }
-        chromosome.swapClientsWithinRoute(routeIdx, clientAIdx, clientBIdx);
-    }
-}
-
 void swapClientsBetweenRoutes(Chromosome& chromosome, const int capacity, const int routesCount) {
     int attempts = 0;
     uniform_int_distribution<> route_dis(0, routesCount - 1);
@@ -267,8 +253,32 @@ void moveClientToRoute(Chromosome& chromosome, const int capacity, const int rou
     }
 }
 
+void apply2Opt(Route& route, const Point& depot) {
+    const int n = route.clientCount();
+    if (n < 4) return;
+
+    double best_distance = calculate_route_distance(route, depot);
+    bool improved = true;
+
+    while (improved) {
+        improved = false;
+        for (int i = 0; i < n - 1; i++) {
+            for (int j = i + 1; j < n; j++) {
+                reverse(route.clients.begin() + i, route.clients.begin() + j + 1);
+                double new_distance = calculate_route_distance(route, depot);
+                if (new_distance < best_distance) {
+                    best_distance = new_distance;
+                    improved = true;
+                } else {
+                    reverse(route.clients.begin() + i, route.clients.begin() + j + 1);
+                }
+            }
+        }
+    }
+}
+
 void mutate_chromosome(Chromosome& chromosome, const Point& depot, int capacity) {
-    uniform_int_distribution<> dis(0, 3);
+    uniform_int_distribution<> dis(0, 2);
     const int mutation_type = dis(gen);
     if (const int routesCount = static_cast<int>(chromosome.routes.size()); mutation_type == 0 && routesCount >= 2) swapClientsBetweenRoutes(chromosome, capacity, routesCount);
     else if (mutation_type == 1 && routesCount >= 2) moveClientToRoute(chromosome, capacity, routesCount);
@@ -280,9 +290,11 @@ void mutate_chromosome(Chromosome& chromosome, const Point& depot, int capacity)
             chromosome.moveClientToNewRoute(fromRouteIdx, clientIdx);
         }
     }
-    else if (mutation_type == 3 && routesCount >= 1) swapClientsWithinRoute(chromosome, routesCount);
 
     chromosome.deleteEmptyRoutes();
+    for (Route& route : chromosome.routes) {
+        apply2Opt(route, depot);
+    }
     chromosome.fitness = score(chromosome.routes, depot);
 }
 
