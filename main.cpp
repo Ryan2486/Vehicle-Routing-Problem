@@ -23,6 +23,9 @@ constexpr int POPULATION_SIZE = 100;
 constexpr int BEST_SELECTION_SIZE = POPULATION_SIZE * 0.1;
 constexpr int MAX_ATTEMPTS = 50;
 
+static vector<vector<double>> distance_cache;
+static bool cache_initialized = false;
+
 struct Point{
     int index;
     int x;
@@ -99,8 +102,23 @@ struct Chromosome{
     }
 };
 
+void initDistanceCache(const vector<Point>& clients, const Point& depot) {
+    int max_index = depot.index;
+    for (const auto& client : clients) {
+        max_index = max(max_index, client.index);
+    }
+    distance_cache.assign(max_index + 1, vector<double>(max_index + 1, -1.0));
+    cache_initialized = true;
+}
+
 double distance(const Point& a, const Point& b) {
-    return sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
+    if (cache_initialized && distance_cache[a.index][b.index] >= 0.0) return distance_cache[a.index][b.index];
+    const double dist = sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
+    if (cache_initialized) {
+        distance_cache[a.index][b.index] = dist;
+        distance_cache[b.index][a.index] = dist;
+    }
+    return dist;
 }
 
 double calculate_route_distance(const Route& route, const Point& depot) {
@@ -326,6 +344,7 @@ vector<Chromosome> generateNextGeneration(const vector<Chromosome>& parents, con
 string solve_vrp(const vector<Point>& clients, const Point& depot, int capacity) {
     const auto start_time = chrono::high_resolution_clock::now();
     const auto time_limit = chrono::milliseconds(9500);
+    initDistanceCache(clients, depot);
 
     vector<Chromosome> population = initialize_population(clients, depot, capacity);
 
