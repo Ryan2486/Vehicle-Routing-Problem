@@ -122,6 +122,30 @@ double score(const vector<Route>& routes, const Point& depot) {
     return total_distance;
 }
 
+void apply2Opt(Route& route, const Point& depot) {
+    const int n = route.clientCount();
+    if (n < 4) return;
+
+    double best_distance = calculate_route_distance(route, depot);
+    bool improved = true;
+
+    while (improved) {
+        improved = false;
+        for (int i = 0; i < n - 1; i++) {
+            for (int j = i + 1; j < n; j++) {
+                reverse(route.clients.begin() + i, route.clients.begin() + j + 1);
+                double new_distance = calculate_route_distance(route, depot);
+                if (new_distance < best_distance) {
+                    best_distance = new_distance;
+                    improved = true;
+                } else {
+                    reverse(route.clients.begin() + i, route.clients.begin() + j + 1);
+                }
+            }
+        }
+    }
+}
+
 string format_output(const vector<Route>& routes) {
     string output;
     for (int i = 0; i < routes.size(); i++) {
@@ -189,6 +213,9 @@ vector<Chromosome> initialize_population(const vector<Point>& clients, const Poi
         vector<Point> shuffled_clients = shuffle_clients(clients);
         chromosome.routes = create_routes(shuffled_clients, capacity);
         chromosome.fitness = score(chromosome.routes, depot);
+        for (Route& route : chromosome.routes) {
+            apply2Opt(route, depot);
+        }
         population.push_back(chromosome);
     }
     return population;
@@ -249,30 +276,6 @@ void moveClientToRoute(Chromosome& chromosome, const int capacity, const int rou
 
             chromosome.moveClientRoute(fromRouteIdx, toRouteIdx, clientIdx);
             break;
-        }
-    }
-}
-
-void apply2Opt(Route& route, const Point& depot) {
-    const int n = route.clientCount();
-    if (n < 4) return;
-
-    double best_distance = calculate_route_distance(route, depot);
-    bool improved = true;
-
-    while (improved) {
-        improved = false;
-        for (int i = 0; i < n - 1; i++) {
-            for (int j = i + 1; j < n; j++) {
-                reverse(route.clients.begin() + i, route.clients.begin() + j + 1);
-                double new_distance = calculate_route_distance(route, depot);
-                if (new_distance < best_distance) {
-                    best_distance = new_distance;
-                    improved = true;
-                } else {
-                    reverse(route.clients.begin() + i, route.clients.begin() + j + 1);
-                }
-            }
         }
     }
 }
