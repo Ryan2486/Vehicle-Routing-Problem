@@ -15,17 +15,25 @@ This project solves the **Vehicle Routing Problem** using a **genetic algorithm*
 
 ## Algorithm Overview
 
-### 1. Genetic Algorithm
+### 1.1 Genetic Algorithm
 
 The solver uses a genetic algorithm with the following components:
 
 - **Population** : 100 chromosomes (solutions)
 - **Selection**: The top 10 chromosomes are kept at each generation
-- **Mutation**: 4 types of random mutations:
+- **Mutation**: 3 types of random mutations:
     - Swap customers between two routes
     - Move a customer to another route
     - Create a new route for a customer
-    - Swap positions of two customers in the same route
+
+### 1.2 Local Optimization: 2-opt
+
+After generation and each mutation, the **2-opt algorithm** is applied to each route to optimize the order of customers:
+- It tries all possible edge swaps in a route
+- Keeps the swap if it reduces the route distance
+- Repeats until no improvement is found
+
+This eliminates the need for intra-route swap mutations since 2-opt handles route optimization more efficiently.
 
 ### 2. Fitness Function
 
